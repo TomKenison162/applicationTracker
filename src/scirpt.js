@@ -1,5 +1,5 @@
 // --- CONFIGURATION ---
-const CLIENT_ID = '453979721534-f4n0mtig7qc506veahvja29c24t3enu4.apps.googleusercontent.com'; // ⚠️ PASTE YOUR CLIENT ID HERE
+const CLIENT_ID = '453979721534-3nf5tank5d8hjmsrnjcqjcakjldfs459.apps.googleusercontent.com'; 
 const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 let tokenClient;
 let accessToken;
