@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gmail Application Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Job Application Tracker</h1>
+        <p>Automatically generate a tracker from your Gmail using AI-powered parsing</p>
+    </header>
+
+    <main>
+        <div class="instructions">
+            <h3>How it works:</h3>
+            <ol>
+                <li>Login with Google to grant read-only access to your Gmail</li>
+                <li>The system will search for job-related emails since September 1st, 2025</li>
+                <li>An AI model will analyze each email to extract key details</li>
+                <li>Your job application tracker will be automatically generated</li>
+            </ol>
+        </div>
+
+        <div class="button-group">
+            <button id="login-button">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 12.275v-9.275h8.359c.228.001.451.033.666.094.601.173 1.105.58 1.468 1.118.363.537.507 1.181.507 1.834v12.478c0 .653-.144 1.297-.507 1.834-.363.538-.867.945-1.468 1.118-.215.061-.438.093-.666.094h-8.359v-9.275h4.766l-1.406-1.725h-3.36v-4.75h3.36l1.406-1.725h-4.766z"/>
+                </svg>
+                1. Login with Google
+            </button>
+            <button id="fetch-button" disabled>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-2.033 16.01c.564-1.789 1.632-3.932 1.821-4.474.273-.787-.211-1.136-1.74.209l-.34-.64c1.744-1.897 5.335-2.326 4.113.613-.763 1.835-1.309 3.074-1.621 4.03-.455 1.393.694.828 1.819-.211.153.25.203.331.356.619-2.498 2.378-5.271 2.588-4.408-.146zm4.742-8.169c-.532.453-1.32.443-1.761-.022-.441-.465-.367-1.208.164-1.661.532-.453 1.32-.442 1.761.022.439.466.367 1.209-.164 1.661z"/>
+                </svg>
+                2. Fetch & Track Applications
+            </button>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+        </div>
+        
+        <div id="status">Ready to authenticate with Google</div>
+        
+        <div class="stats-container" id="stats-container" style="display: none;">
+            <div class="stat-card">
+                <div>Total Applications</div>
+                <div class="stat-value" id="stat-total">0</div>
+            </div>
+            <div class="stat-card">
+                <div>Interviews</div>
+                <div class="stat-value" id="stat-interviews">0</div>
+            </div>
+            <div class="stat-card">
+                <div>Offers</div>
+                <div class="stat-value" id="stat-offers">0</div>
+            </div>
+            <div class="stat-card">
+                <div>Rejections</div>
+                <div class="stat-value" id="stat-rejections">0</div>
+            </div>
+        </div>
+        
+        <div id="tracker-container">
+            </div>
+    </main>
+
+    <div class="footer">
+        <p>Your data is processed entirely in your browser and is not stored on any server.</p>
+        <p>Uses AI to intelligently parse email content and extract job application details.</p>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="script.js"></script>
+</body>
+</html>
