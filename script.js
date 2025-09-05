@@ -197,26 +197,28 @@ async function parseEmailWithGemini(emailData) {
     }
     
     // Call Gemini API
-    try {
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GeminiAPIKey}`;
-        
-        const prompt = `Extract job application information from this email. Return ONLY a JSON object with this exact structure:
-        {
-            "company": "company name",
-            "role": "job position or role",
-            "status": "Applied/Interview/Assessment/Offer/Rejected",
-            "notes": "key details like next steps, deadlines, salary, etc."
-        }
-        
-        Email Subject: ${subject}
-        From: ${fromHeader}
-        Date: ${date}
-        Email Body: ${body}`;
+    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    
+    const prompt = `Extract job application information from this email. Return ONLY a JSON object with this exact structure:
+    {
+        "company": "company name",
+        "role": "job position or role",
+        "status": "Applied/Interview/Assessment/Offer/Rejected",
+        "notes": "key details like next steps, deadlines, salary, etc."
+    }
+    
+    Email Subject: ${subject}
+    From: ${fromHeader}
+    Date: ${date}
+    Email Body: ${body}`;
 
+    try {
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                // 2. API key is now sent in the header
+                'x-goog-api-key': GeminiAPIKey 
             },
             body: JSON.stringify({
                 contents: [{
@@ -230,6 +232,7 @@ async function parseEmailWithGemini(emailData) {
                 }
             })
         });
+  
         
         const data = await response.json();
         
