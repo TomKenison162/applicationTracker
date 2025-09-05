@@ -35,6 +35,9 @@ window.onload = function() {
     }
 };
 
+// Helper function to pause execution for a set time
+const delay = ms => new Promise(res => setTimeout(res, ms));
+
 // Google Auth Initialization
 function initGoogleAuth() {
     tokenClient = google.accounts.oauth2.initTokenClient({
@@ -151,7 +154,7 @@ async function fetchAndProcessEmails() {
             // Process email with Gemini AI
             const parsedApp = await parseEmailWithGemini(emailData);
             if (parsedApp) applications.push(parsedApp);
-            
+            await delay(1000); 
             // Update progress
             progressBar.style.width = `${30 + ((i + 1) / listData.messages.length) * 60}%`;
             statusText.textContent = `Processing emails: ${i + 1}/${listData.messages.length}`;
