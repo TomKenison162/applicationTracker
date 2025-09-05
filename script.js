@@ -198,7 +198,7 @@ async function parseEmailWithGemini(emailData) {
     
     // Call Gemini API
     try {
-        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GeminiAPIKey}`;
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro:generateContent?key=${GeminiAPIKey}`;
         
         const prompt = `Extract job application information from this email. Return ONLY a JSON object with this exact structure:
         {
