@@ -201,7 +201,7 @@ async function parseEmailWithGemini(emailData) {
     const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
     const prompt = `From the following email, extract job application information. Return ONLY a valid JSON object with this exact structure: {"company": "string", "role": "string", "status": "Applied/Interview/Assessment/Offer/Rejected", "notes": "string with key details"}. If it's not a job application email, return {"status": "NotApplicable"}.
-    if an email is from human resources or caeraers safe to say its probably application
+    
     Email Subject: ${subject}
     From: ${fromHeader}
     Date: ${date}
