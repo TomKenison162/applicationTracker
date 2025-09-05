@@ -123,7 +123,7 @@ async function fetchAndProcessEmails() {
     fetchEmailsBtn.disabled = true;
     progressBar.style.width = '10%';
 
-    const query = 'after:2025/09/01 (subject:application OR subject:interview OR subject:"next steps" OR subject:assessment OR subject:offer OR subject:rejection)';
+    const query = 'after:2025/09/01 ';
     const encodedQuery = encodeURIComponent(query);
 
     try {
@@ -154,7 +154,7 @@ async function fetchAndProcessEmails() {
             // Process email with Gemini AI
             const parsedApp = await parseEmailWithGemini(emailData);
             if (parsedApp) applications.push(parsedApp);
-            await delay(100); 
+          
             // Update progress
             progressBar.style.width = `${30 + ((i + 1) / listData.messages.length) * 60}%`;
             statusText.textContent = `Processing emails: ${i + 1}/${listData.messages.length}`;
