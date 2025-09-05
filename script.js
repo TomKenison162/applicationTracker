@@ -1,108 +1,178 @@
-// --- CONFIGURATION ---
-const CLIENT_ID = '453979721534-3nf5tank5d8hjmsrnjcqjcakjldfs459.apps.googleusercontent.com'; 
-const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
-let tokenClient;
-let accessToken;
-
-// --- DOM ELEMENTS ---
-const loginButton = document.getElementById('login-button');
-const fetchButton = document.getElementById('fetch-button');
-const statusDiv = document.getElementById('status');
-const trackerContainer = document.getElementById('tracker-container');
+// DOM Elements
+const navLinks = document.querySelectorAll('.nav-link');
+const pages = document.querySelectorAll('.page');
+const authButton = document.getElementById('auth-button');
+const fetchEmailsBtn = document.getElementById('fetch-emails-btn');
+const statusText = document.getElementById('status-text');
 const progressBar = document.getElementById('progress-bar');
-const statsContainer = document.getElementById('stats-container');
-const statTotal = document.getElementById('stat-total');
+const applicationsBody = document.getElementById('applications-body');
+const saveApiKeyBtn = document.getElementById('save-api-key');
+const apiKeyInput = document.getElementById('api-key-input');
+const disconnectBtn = document.getElementById('disconnect-btn');
+const connectedEmail = document.getElementById('connected-email');
+
+// Statistics elements
+const statApplications = document.getElementById('stat-applications');
 const statInterviews = document.getElementById('stat-interviews');
 const statOffers = document.getElementById('stat-offers');
 const statRejections = document.getElementById('stat-rejections');
 
-// --- INITIALIZATION ---
-window.onload = () => {
-    // 1. Initialize the Google Auth client
+// Configuration
+const CLIENT_ID = '453979721534-3nf5tank5d8hjmsrnjcqjcakjldfs459.apps.googleusercontent.com';
+const GMAIL_SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
+let tokenClient;
+let accessToken;
+let GeminiAPIKey = localStorage.getItem('gemini_api_key');
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    initGoogleAuth();
+    loadSavedSettings();
+    setupEventListeners();
+    
+    if (GeminiAPIKey) {
+        apiKeyInput.value = GeminiAPIKey;
+    }
+});
+
+// Google Auth Initialization
+function initGoogleAuth() {
     tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: GMAIL_SCOPE,
         callback: handleAuthResponse,
     });
-    loginButton.onclick = () => tokenClient.requestAccessToken();
-    fetchButton.onclick = fetchAndProcessEmails;
-};
 
-// --- AUTHENTICATION LOGIC ---
-function handleAuthResponse(response) {
-    if (response.error) {
-        statusDiv.innerText = "Authentication failed. Please try again.";
-        return;
-    }
-    accessToken = response.access_token;
-    statusDiv.innerHTML = '✅ <strong>Authentication successful!</strong> Click "Fetch & Track Applications" to continue.';
-    loginButton.disabled = true;
-    fetchButton.disabled = false;
+    authButton.onclick = () => {
+        tokenClient.requestAccessToken();
+    };
 }
 
-// --- GMAIL API & PROCESSING LOGIC ---
+// Event Listeners
+function setupEventListeners() {
+    // Navigation
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pageId = link.getAttribute('data-page');
+            switchPage(pageId);
+            
+            // Update active class
+            navLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+        });
+    });
+
+    // Fetch emails button
+    fetchEmailsBtn.addEventListener('click', fetchAndProcessEmails);
+
+    // Save API key
+    saveApiKeyBtn.addEventListener('click', saveAPIKey);
+
+    // Disconnect button
+    disconnectBtn.addEventListener('click', disconnectGmail);
+}
+
+// Page Navigation
+function switchPage(pageId) {
+    pages.forEach(page => {
+        page.classList.remove('active');
+    });
+    document.getElementById(`${pageId}-page`).classList.add('active');
+}
+
+// Handle Google Auth Response
+function handleAuthResponse(response) {
+    if (response.error) {
+        statusText.textContent = "Authentication failed. Please try again.";
+        return;
+    }
+    
+    accessToken = response.access_token;
+    statusText.textContent = '✅ Authentication successful!';
+    authButton.style.display = 'none';
+    fetchEmailsBtn.disabled = false;
+    
+    // Get user email for display
+    fetch('https://www.googleapis.com/gmail/v1/users/me/profile', {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(profile => {
+        connectedEmail.textContent = profile.emailAddress;
+    })
+    .catch(error => {
+        console.error('Error fetching profile:', error);
+    });
+}
+
+// Fetch and Process Emails with Gemini AI
 async function fetchAndProcessEmails() {
-    statusDiv.innerHTML = '🔍 <strong>Searching for application emails...</strong>';
-    fetchButton.disabled = true;
+    if (!GeminiAPIKey) {
+        statusText.textContent = 'Please add your Gemini API key in Settings first.';
+        switchPage('settings');
+        return;
+    }
+    
+    statusText.textContent = '🔍 Searching for job application emails...';
+    fetchEmailsBtn.disabled = true;
     progressBar.style.width = '10%';
 
-    // 2. Construct the search query for the Gmail API
     const query = 'after:2025/09/01 (subject:application OR subject:interview OR subject:"next steps" OR subject:assessment OR subject:offer OR subject:rejection)';
     const encodedQuery = encodeURIComponent(query);
 
     try {
-        // 3. Find all emails matching the query
+        // Find emails matching the query
         const listResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodedQuery}`, {
             headers: { 'Authorization': `Bearer ${accessToken}` }
         });
         const listData = await listResponse.json();
 
         if (!listData.messages || listData.messages.length === 0) {
-            statusDiv.innerText = 'No application-related emails found since Sept 1, 2025.';
+            statusText.textContent = 'No job application emails found since Sept 1, 2025.';
             progressBar.style.width = '0%';
             return;
         }
 
-        statusDiv.innerHTML = `<strong>Found ${listData.messages.length} emails. Processing with AI...</strong>`;
+        statusText.textContent = `Found ${listData.messages.length} emails. Processing with AI...`;
         progressBar.style.width = '30%';
 
-        // 4. Fetch the full content of each email
+        // Process each email
         const applications = [];
-        let processed = 0;
-        
-        for (const message of listData.messages) {
+        for (let i = 0; i < listData.messages.length; i++) {
+            const message = listData.messages[i];
             const msgResponse = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${message.id}`, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
             const emailData = await msgResponse.json();
             
-            // Process email with LLM simulation
-            const parsedApp = await parseEmailWithLLM(emailData);
-            
+            // Process email with Gemini AI
+            const parsedApp = await parseEmailWithGemini(emailData);
             if (parsedApp) applications.push(parsedApp);
             
-            processed++;
-            progressBar.style.width = `${30 + (processed / listData.messages.length) * 60}%`;
-            statusDiv.innerHTML = `<strong>Processing emails: ${processed}/${listData.messages.length}</strong>`;
+            // Update progress
+            progressBar.style.width = `${30 + ((i + 1) / listData.messages.length) * 60}%`;
+            statusText.textContent = `Processing emails: ${i + 1}/${listData.messages.length}`;
         }
 
-        renderTracker(applications);
+        // Display results
+        renderApplications(applications);
         updateStats(applications);
-        statusDiv.innerHTML = `<strong>🎉 Tracker generated with ${applications.length} applications!</strong>`;
-        progressBar.style.width = '100%';
-
+        statusText.textContent = `🎉 Processed ${applications.length} job applications!`;
+        
     } catch (error) {
         console.error('Error fetching emails:', error);
-        statusDiv.innerHTML = '❌ <strong>Error fetching emails. Check console for details.</strong>';
+        statusText.textContent = '❌ Error fetching emails. Check console for details.';
         progressBar.style.width = '0%';
     } finally {
-        fetchButton.disabled = false;
+        fetchEmailsBtn.disabled = false;
     }
 }
 
-// --- LLM SIMULATION ---
-// In a real implementation, this would call an external LLM API
-async function parseEmailWithLLM(emailData) {
+// Parse email using Gemini AI
+async function parseEmailWithGemini(emailData) {
     const headers = emailData.payload.headers;
     const subject = headers.find(h => h.name.toLowerCase() === 'subject')?.value || '';
     const fromHeader = headers.find(h => h.name.toLowerCase() === 'from')?.value || '';
@@ -120,129 +190,163 @@ async function parseEmailWithLLM(emailData) {
         body = atob(emailData.payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
     }
     
-    // Simulate LLM processing with rules and pattern matching
-    return simulateLLMProcessing(subject, fromHeader, body, date);
+    // Truncate body if too long
+    const maxLength = 4000;
+    if (body.length > maxLength) {
+        body = body.substring(0, maxLength) + '... [truncated]';
+    }
+    
+    // Call Gemini API
+    try {
+        const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GeminiAPIKey}`;
+        
+        const prompt = `Extract job application information from this email. Return ONLY a JSON object with this exact structure:
+        {
+            "company": "company name",
+            "role": "job position or role",
+            "status": "Applied/Interview/Assessment/Offer/Rejected",
+            "notes": "key details like next steps, deadlines, salary, etc."
+        }
+        
+        Email Subject: ${subject}
+        From: ${fromHeader}
+        Date: ${date}
+        Email Body: ${body}`;
+
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                contents: [{
+                    parts: [{
+                        text: prompt
+                    }]
+                }],
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 500,
+                }
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+            const content = data.candidates[0].content.parts[0].text;
+            
+            // Extract JSON from the response
+            let jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                try {
+                    const llmData = JSON.parse(jsonMatch[0]);
+                    let company = fromHeader.split('<')[0].replace(/"/g, '').trim();
+                    
+                    return {
+                        company: llmData.company || company,
+                        role: llmData.role || 'Unknown Position',
+                        date: date,
+                        status: llmData.status || 'Applied',
+                        subject: subject,
+                        notes: llmData.notes || ''
+                    };
+                } catch (e) {
+                    console.error('Error parsing LLM JSON response:', e, 'Response:', content);
+                    return null;
+                }
+            }
+        }
+        
+        return null;
+        
+    } catch (error) {
+        console.error('Error calling Gemini API:', error);
+        return null;
+    }
 }
 
-function simulateLLMProcessing(subject, from, body, date) {
-    // Extract company name from the "from" field
-    let company = from.split('<')[0].replace(/"/g, '').trim();
-    
-    // Default application data
-    const application = {
-        company: company,
-        role: 'Unknown Position',
-        date: date,
-        status: 'Applied',
-        subject: subject,
-        notes: ''
-    };
-    
-    // Use patterns to extract role information
-    const rolePatterns = [
-        /(?:position|role|applying for)[:\s]*([^\n<.,;!?]+)/i,
-        /(?:job title)[:\s]*([^\n<.,;!?]+)/i,
-        /(?:software engineer|frontend developer|backend developer|full stack|data scientist|product manager|ux designer)/i
-    ];
-    
-    for (const pattern of rolePatterns) {
-        const match = body.match(pattern) || subject.match(pattern);
-        if (match) {
-            application.role = match[1] || match[0];
-            break;
-        }
-    }
-    
-    // Determine status based on content analysis
-    const statusPatterns = {
-        'Interview': /interview|screening|phone screen|meeting|zoom|teams|call/i,
-        'Assessment': /assessment|test|assignment|challenge|hackerrank|codility/i,
-        'Offer': /offer|congratulations|welcome|compensation|package|joining/i,
-        'Rejected': /reject|not moving|not selected|unfortunately|other candidate|decline/i
-    };
-    
-    // Check subject and body for status indicators
-    let currentStatus = 'Applied';
-    for (const [status, pattern] of Object.entries(statusPatterns)) {
-        if (pattern.test(subject) || pattern.test(body)) {
-            currentStatus = status;
-            // Don't break to allow "offer" to override "rejected" if both appear
-            if (status === 'Offer') currentStatus = 'Offer';
-        }
-    }
-    application.status = currentStatus;
-    
-    // Extract additional notes
-    const notePatterns = [
-        /next steps[:\s]*([^\n<.,;!?]+)/i,
-        /deadline[:\s]*([^\n<.,;!?]+)/i,
-        /salary[:\s]*([^\n<.,;!?]+)/i,
-        /location[:\s]*([^\n<.,;!?]+)/i
-    ];
-    
-    const notes = [];
-    for (const pattern of notePatterns) {
-        const match = body.match(pattern);
-        if (match) {
-            notes.push(match[0]);
-        }
-    }
-    
-    if (notes.length > 0) {
-        application.notes = notes.join('; ');
-    }
-    
-    return application;
-}
-
-// --- HELPER FUNCTIONS ---
-function updateStats(applications) {
-    statsContainer.style.display = 'flex';
-    
-    const total = applications.length;
-    const interviews = applications.filter(app => app.status === 'Interview').length;
-    const offers = applications.filter(app => app.status === 'Offer').length;
-    const rejections = applications.filter(app => app.status === 'Rejected').length;
-    
-    statTotal.textContent = total;
-    statInterviews.textContent = interviews;
-    statOffers.textContent = offers;
-    statRejections.textContent = rejections;
-}
-
-function renderTracker(applications) {
+// Render applications to the table
+function renderApplications(applications) {
     if (applications.length === 0) {
-        trackerContainer.innerHTML = '<p>No job applications found in your emails.</p>';
+        applicationsBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px;">No job applications found</td></tr>';
         return;
     }
     
-    let tableHTML = `
-        <table>
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Company</th>
-                    <th>Role</th>
-                    <th>Status</th>
-                    <th>Notes</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
+    let html = '';
     applications.forEach(app => {
         const statusClass = `status-${app.status.toLowerCase()}`;
-        tableHTML += `
+        html += `
             <tr>
-                <td>${app.date}</td>
                 <td>${app.company}</td>
                 <td>${app.role}</td>
+                <td>${app.date}</td>
                 <td><span class="status-badge ${statusClass}">${app.status}</span></td>
                 <td>${app.notes}</td>
             </tr>
         `;
     });
+    
+    applicationsBody.innerHTML = html;
+}
 
-    tableHTML += '</tbody></table>';
-    trackerContainer.innerHTML = tableHTML;
+// Update statistics
+function updateStats(applications) {
+    const total = applications.length;
+    const interviews = applications.filter(app => app.status === 'Interview').length;
+    const offers = applications.filter(app => app.status === 'Offer').length;
+    const rejections = applications.filter(app => app.status === 'Rejected').length;
+    
+    statApplications.textContent = total;
+    statInterviews.textContent = interviews;
+    statOffers.textContent = offers;
+    statRejections.textContent = rejections;
+}
+
+// Save API Key
+function saveAPIKey() {
+    const key = apiKeyInput.value.trim();
+    if (key) {
+        GeminiAPIKey = key;
+        localStorage.setItem('gemini_api_key', key);
+        alert('API key saved successfully!');
+    } else {
+        alert('Please enter a valid API key');
+    }
+}
+
+// Disconnect Gmail
+function disconnectGmail() {
+    if (accessToken) {
+        google.accounts.oauth2.revoke(accessToken, () => {
+            console.log('Access revoked');
+        });
+    }
+    
+    accessToken = null;
+    authButton.style.display = 'inline-flex';
+    fetchEmailsBtn.disabled = true;
+    connectedEmail.textContent = 'Not connected';
+    statusText.textContent = 'Connect your Gmail to get started';
+    applicationsBody.innerHTML = '';
+    
+    // Reset stats
+    statApplications.textContent = '0';
+    statInterviews.textContent = '0';
+    statOffers.textContent = '0';
+    statRejections.textContent = '0';
+}
+
+// Load saved settings
+function loadSavedSettings() {
+    const notifications = localStorage.getItem('notifications');
+    const autoSync = localStorage.getItem('auto-sync');
+    
+    if (notifications !== null) {
+        document.getElementById('notifications').checked = notifications === 'true';
+    }
+    
+    if (autoSync !== null) {
+        document.getElementById('auto-sync').checked = autoSync === 'true';
+    }
 }

@@ -3,74 +3,213 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gmail Application Tracker</title>
+    <title>JobTrack AI - Smart Application Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
-        <h1>Job Application Tracker</h1>
-        <p>Automatically generate a tracker from your Gmail using AI-powered parsing</p>
+        <div class="container">
+            <nav>
+                <div class="logo">
+                    <i class="fas fa-brain"></i>
+                    <span>JobTrack AI</span>
+                </div>
+                <div class="nav-links">
+                    <a href="#" class="nav-link active" data-page="dashboard">Dashboard</a>
+                    <a href="#" class="nav-link" data-page="settings">Settings</a>
+                    <a href="#" class="nav-link" data-page="about">About</a>
+                </div>
+            </nav>
+        </div>
     </header>
 
     <main>
-        <div class="instructions">
-            <h3>How it works:</h3>
-            <ol>
-                <li>Login with Google to grant read-only access to your Gmail</li>
-                <li>The system will search for job-related emails since September 1st, 2025</li>
-                <li>An AI model will analyze each email to extract key details</li>
-                <li>Your job application tracker will be automatically generated</li>
-            </ol>
+        <div id="dashboard-page" class="page active">
+            <div class="container">
+                <div class="hero">
+                    <h1>Track Your Job Applications with AI</h1>
+                    <p>JobTrack AI analyzes your Gmail to automatically track job applications, interviews, and offers in one place.</p>
+                    <button id="auth-button" class="btn btn-secondary">
+                        <i class="fab fa-google"></i> Sign in with Google
+                    </button>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="card stat-card">
+                        <div class="stat-icon" style="color: #4285F4;">
+                            <i class="fas fa-paper-plane"></i>
+                        </div>
+                        <div class="stat-number" id="stat-applications">0</div>
+                        <div class="stat-label">Applications</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon" style="color: #FBBC05;">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-number" id="stat-interviews">0</div>
+                        <div class="stat-label">Interviews</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon" style="color: #34A853;">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="stat-number" id="stat-offers">0</div>
+                        <div class="stat-label">Offers</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-icon" style="color: #EA4335;">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-number" id="stat-rejections">0</div>
+                        <div class="stat-label">Rejections</div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">Your Applications</h2>
+                        <button id="fetch-emails-btn" class="btn" disabled>
+                            <i class="fas fa-sync"></i> Refresh Applications
+                        </button>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+                    </div>
+                    <div id="status-text">Connect your Gmail to get started</div>
+                    <div id="applications-container">
+                        <table class="applications-table">
+                            <thead>
+                                <tr>
+                                    <th>Company</th>
+                                    <th>Position</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody id="applications-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="button-group">
-            <button id="login-button">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 12.275v-9.275h8.359c.228.001.451.033.666.094.601.173 1.105.58 1.468 1.118.363.537.507 1.181.507 1.834v12.478c0 .653-.144 1.297-.507 1.834-.363.538-.867.945-1.468 1.118-.215.061-.438.093-.666.094h-8.359v-9.275h4.766l-1.406-1.725h-3.36v-4.75h3.36l1.406-1.725h-4.766z"/>
-                </svg>
-                1. Login with Google
-            </button>
-            <button id="fetch-button" disabled>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-2.033 16.01c.564-1.789 1.632-3.932 1.821-4.474.273-.787-.211-1.136-1.74.209l-.34-.64c1.744-1.897 5.335-2.326 4.113.613-.763 1.835-1.309 3.074-1.621 4.03-.455 1.393.694.828 1.819-.211.153.25.203.331.356.619-2.498 2.378-5.271 2.588-4.408-.146zm4.742-8.169c-.532.453-1.32.443-1.761-.022-.441-.465-.367-1.208.164-1.661.532-.453 1.32-.442 1.761.022.439.466.367 1.209-.164 1.661z"/>
-                </svg>
-                2. Fetch & Track Applications
-            </button>
+        <div id="settings-page" class="page">
+            <div class="container">
+                <h1 style="margin-bottom: 30px;">Settings</h1>
+                
+                <div class="settings-grid">
+                    <div class="card">
+                        <h2 class="card-title">Gemini API Key</h2>
+                        <p style="margin-bottom: 20px; color: var(--gray);">
+                            Enter your Google Gemini API key to enable AI-powered email analysis.
+                        </p>
+                        <div class="api-key-form">
+                            <input type="password" id="api-key-input" placeholder="Enter your API key">
+                            <button class="btn" id="save-api-key">
+                                <i class="fas fa-save"></i> Save
+                            </button>
+                        </div>
+                        <p style="margin-top: 15px; font-size: 0.9rem; color: var(--gray);">
+                            Don't have an API key? <a href="https://aistudio.google.com/app/apikey" target="_blank">Get one here</a>
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <h2 class="card-title">Email Preferences</h2>
+                        <div style="margin-top: 20px;">
+                            <label class="checkbox-container">
+                                <input type="checkbox" id="notifications" checked>
+                                <span class="checkmark"></span>
+                                Email me weekly updates
+                            </label>
+                            <label class="checkbox-container" style="margin-top: 15px;">
+                                <input type="checkbox" id="auto-sync" checked>
+                                <span class="checkmark"></span>
+                                Automatically sync new emails
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2 class="card-title">Account</h2>
+                        <div style="margin-top: 20px;">
+                            <p><strong>Connected account:</strong> <span id="connected-email">Not connected</span></p>
+                            <button class="btn" style="margin-top: 20px; background-color: var(--danger);" id="disconnect-btn">
+                                <i class="fas fa-unlink"></i> Disconnect Gmail
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        
-        <div class="progress-container">
-            <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+
+        <div id="about-page" class="page">
+            <div class="container">
+                <h1 style="margin-bottom: 30px;">About JobTrack AI</h1>
+                
+                <div class="card" style="margin-bottom: 30px;">
+                    <h2 class="card-title">How It Works</h2>
+                    <p style="margin: 20px 0; line-height: 1.8;">
+                        JobTrack AI uses Google's Gemini AI to analyze your Gmail and automatically track your job applications.
+                        It identifies application confirmations, interview invitations, offers, and rejections, then organizes
+                        them into a simple dashboard so you can focus on what matters - preparing for interviews!
+                    </p>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 30px;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <h3>1. Connect Gmail</h3>
+                            <p>Securely connect your Gmail account with read-only access</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                            <h3>2. AI Analysis</h3>
+                            <p>Gemini AI analyzes your emails to find job-related content</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 3rem; color: var(--primary); margin-bottom: 15px;">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <h3>3. Track Progress</h3>
+                            <p>Monitor your applications and interview progress in one dashboard</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">Privacy & Security</h2>
+                    <p style="margin: 20px 0; line-height: 1.8;">
+                        Your privacy is important to us. JobTrack AI only requests read-only access to your Gmail,
+                        and we never store your emails on our servers. All processing happens in your browser using
+                        Google's secure API infrastructure. Your Gemini API key is stored locally on your device.
+                    </p>
+                </div>
+            </div>
         </div>
-        
-        <div id="status">Ready to authenticate with Google</div>
-        
-        <div class="stats-container" id="stats-container" style="display: none;">
-            <div class="stat-card">
-                <div>Total Applications</div>
-                <div class="stat-value" id="stat-total">0</div>
-            </div>
-            <div class="stat-card">
-                <div>Interviews</div>
-                <div class="stat-value" id="stat-interviews">0</div>
-            </div>
-            <div class="stat-card">
-                <div>Offers</div>
-                <div class="stat-value" id="stat-offers">0</div>
-            </div>
-            <div class="stat-card">
-                <div>Rejections</div>
-                <div class="stat-value" id="stat-rejections">0</div>
-            </div>
-        </div>
-        
-        <div id="tracker-container">
-            </div>
     </main>
 
-    <div class="footer">
-        <p>Your data is processed entirely in your browser and is not stored on any server.</p>
-        <p>Uses AI to intelligently parse email content and extract job application details.</p>
-    </div>
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="logo" style="color: white;">
+                    <i class="fas fa-brain"></i>
+                    <span>JobTrack AI</span>
+                </div>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Contact</a>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="script.js"></script>
