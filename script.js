@@ -25,15 +25,15 @@ let accessToken;
 let GeminiAPIKey = localStorage.getItem('gemini_api_key');
 
 // Initialize
-document.addEventListener('DOMContentLoaded', function() {
+window.onload = function() {
     initGoogleAuth();
     loadSavedSettings();
     setupEventListeners();
-    
+
     if (GeminiAPIKey) {
         apiKeyInput.value = GeminiAPIKey;
     }
-});
+};
 
 // Google Auth Initialization
 function initGoogleAuth() {
