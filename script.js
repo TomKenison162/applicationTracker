@@ -154,7 +154,7 @@ async function fetchAndProcessEmails() {
             // Process email with Gemini AI
             const parsedApp = await parseEmailWithGemini(emailData);
             if (parsedApp) applications.push(parsedApp);
-            await delay(1000); 
+            await delay(100); 
             // Update progress
             progressBar.style.width = `${30 + ((i + 1) / listData.messages.length) * 60}%`;
             statusText.textContent = `Processing emails: ${i + 1}/${listData.messages.length}`;
@@ -198,7 +198,7 @@ async function parseEmailWithGemini(emailData) {
     }
 
     // FIX #2: Use a valid, current model name
-    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent';
+    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
     const prompt = `From the following email, extract job application information. Return ONLY a valid JSON object with this exact structure: {"company": "string", "role": "string", "status": "Applied/Interview/Assessment/Offer/Rejected", "notes": "string with key details"}. If it's not a job application email, return {"status": "NotApplicable"}.
     
