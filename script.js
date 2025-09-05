@@ -178,8 +178,7 @@ async function parseEmailWithGemini(emailData) {
     const fromHeader = headers.find(h => h.name.toLowerCase() === 'from')?.value || '';
     const dateHeader = headers.find(h => h.name.toLowerCase() === 'date')?.value;
     const date = dateHeader ? new Date(dateHeader).toLocaleDateString() : 'Unknown date';
-    
-    // Extract email body
+
     let body = '';
     if (emailData.payload.parts) {
         const textPart = emailData.payload.parts.find(part => part.mimeType === 'text/plain');
@@ -189,23 +188,16 @@ async function parseEmailWithGemini(emailData) {
     } else if (emailData.payload.body && emailData.payload.body.data) {
         body = atob(emailData.payload.body.data.replace(/-/g, '+').replace(/_/g, '/'));
     }
-    
-    // Truncate body if too long
-    const maxLength = 4000;
+
+    const maxLength = 8000;
     if (body.length > maxLength) {
         body = body.substring(0, maxLength) + '... [truncated]';
     }
-    
-    // Call Gemini API
-    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
-    
-    const prompt = `Extract job application information from this email. Return ONLY a JSON object with this exact structure:
-    {
-        "company": "company name",
-        "role": "job position or role",
-        "status": "Applied/Interview/Assessment/Offer/Rejected",
-        "notes": "key details like next steps, deadlines, salary, etc."
-    }
+
+    // FIX #2: Use a valid, current model name
+    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent';
+
+    const prompt = `From the following email, extract job application information. Return ONLY a valid JSON object with this exact structure: {"company": "string", "role": "string", "status": "Applied/Interview/Assessment/Offer/Rejected", "notes": "string with key details"}. If it's not a job application email, return {"status": "NotApplicable"}.
     
     Email Subject: ${subject}
     From: ${fromHeader}
@@ -217,35 +209,35 @@ async function parseEmailWithGemini(emailData) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                // 2. API key is now sent in the header
-                'x-goog-api-key': GeminiAPIKey 
+                'x-goog-api-key': GeminiAPIKey
             },
             body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: prompt
-                    }]
-                }],
+                contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: {
-                    temperature: 0.1,
+                    temperature: 0.2,
                     maxOutputTokens: 500,
                 }
             })
         });
-  
+
+        // FIX #1: All of this logic MUST be inside the 'try' block
+        if (!response.ok) {
+            const errorBody = await response.json();
+            console.error('API Error Response:', errorBody);
+            return null;
+        }
         
         const data = await response.json();
         
         if (data.candidates && data.candidates[0] && data.candidates[0].content) {
             const content = data.candidates[0].content.parts[0].text;
-            
-            // Extract JSON from the response
             let jsonMatch = content.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
                 try {
                     const llmData = JSON.parse(jsonMatch[0]);
+                    if (llmData.status === "NotApplicable") return null;
+
                     let company = fromHeader.split('<')[0].replace(/"/g, '').trim();
-                    
                     return {
                         company: llmData.company || company,
                         role: llmData.role || 'Unknown Position',
@@ -255,16 +247,15 @@ async function parseEmailWithGemini(emailData) {
                         notes: llmData.notes || ''
                     };
                 } catch (e) {
-                    console.error('Error parsing LLM JSON response:', e, 'Response:', content);
+                    console.error('Error parsing LLM JSON response:', e, 'Raw Response:', content);
                     return null;
                 }
             }
         }
-        
         return null;
         
     } catch (error) {
-        console.error('Error calling Gemini API:', error);
+        console.error('Network or fetch error:', error);
         return null;
     }
 }
