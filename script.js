@@ -123,7 +123,19 @@ async function fetchAndProcessEmails() {
     fetchEmailsBtn.disabled = true;
     progressBar.style.width = '10%';
 
-    const query = 'after:2025/09/01 after:2025/09/01 {"job application" interview "next steps" assessment offer rejection internship placement "phone screen" "coding challenge" "case study" update feedback position opportunity role vacancy hiring recruiting CV resume "cover letter" "graduate scheme" trainee apprenticeship "not successful"}';
+    // --- FIX STARTS HERE ---
+    // The query was hardcoded to a specific date. 
+    // This now dynamically calculates the date 90 days ago to search for recent applications.
+    const date = new Date();
+    date.setDate(date.getDate() - 90);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    const ninetyDaysAgo = `${year}/${month}/${day}`;
+
+    const query = `after:${ninetyDaysAgo} {"job application" interview "next steps" assessment offer rejection internship placement "phone screen" "coding challenge" "case study" update feedback position opportunity role vacancy hiring recruiting CV resume "cover letter" "graduate scheme" trainee apprenticeship "not successful"}`;
+    // --- FIX ENDS HERE ---
+    
     const encodedQuery = encodeURIComponent(query);
 
     try {
@@ -134,7 +146,7 @@ async function fetchAndProcessEmails() {
         const listData = await listResponse.json();
 
         if (!listData.messages || listData.messages.length === 0) {
-            statusText.textContent = 'No job application emails found since Sept 1, 2025.';
+            statusText.textContent = `No job application emails found in the last 90 days.`;
             progressBar.style.width = '0%';
             return;
         }
@@ -154,7 +166,7 @@ async function fetchAndProcessEmails() {
             // Process email with Gemini AI
             const parsedApp = await parseEmailWithGemini(emailData);
             if (parsedApp) applications.push(parsedApp);
-          
+           
             // Update progress
             progressBar.style.width = `${30 + ((i + 1) / listData.messages.length) * 60}%`;
             statusText.textContent = `Processing emails: ${i + 1}/${listData.messages.length}`;
@@ -197,8 +209,7 @@ async function parseEmailWithGemini(emailData) {
         body = body.substring(0, maxLength) + '... [truncated]';
     }
 
-    // FIX #2: Use a valid, current model name
-    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+    const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
     const prompt = `From the following email, extract job application information. Return ONLY a valid JSON object with this exact structure: {"company": "string", "role": "string", "status": "Applied/Interview/Assessment/Offer/Rejected", "notes": "string with key details"}. If it's not a job application email, return {"status": "NotApplicable"}.
     
@@ -223,7 +234,6 @@ async function parseEmailWithGemini(emailData) {
             })
         });
 
-        // FIX #1: All of this logic MUST be inside the 'try' block
         if (!response.ok) {
             const errorBody = await response.json();
             console.error('API Error Response:', errorBody);
