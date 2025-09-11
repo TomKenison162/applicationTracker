@@ -123,7 +123,7 @@ async function fetchAndProcessEmails() {
     fetchEmailsBtn.disabled = true;
     progressBar.style.width = '10%';
 
-    const query = 'after:2025/09/01 ';
+    const query = 'after:2025/09/01 after:2025/09/01 {"job application" interview "next steps" assessment offer rejection internship placement "phone screen" "coding challenge" "case study" update feedback position opportunity role vacancy hiring recruiting CV resume "cover letter" "graduate scheme" trainee apprenticeship "not successful"}';
     const encodedQuery = encodeURIComponent(query);
 
     try {
@@ -346,4 +346,5 @@ function loadSavedSettings() {
     if (autoSync !== null) {
         document.getElementById('auto-sync').checked = autoSync === 'true';
     }
+
 }
